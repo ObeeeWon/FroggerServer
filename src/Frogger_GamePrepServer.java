@@ -144,7 +144,7 @@ public class Frogger_GamePrepServer {
 			public void run ( ) {
 				synchronized(this) {
 
-					ServerSocket server;
+					ServerSocket server = null;
 					try {
 						
 						server = new ServerSocket(SOCKET_PORT);
@@ -153,7 +153,10 @@ public class Frogger_GamePrepServer {
 							Socket s = server.accept();
 							System.out.println("client connected");
 							
-							ServerService myService = new ServerService (s, frog, user_input, tempScore, carArrays, carArrays2, carArrays3, logArrays, logArrays2, logArrays3);
+							ServerService myService = new ServerService (
+									s, frog, user_input, tempScore, 
+									carArrays, carArrays2, carArrays3, 
+									logArrays, logArrays2, logArrays3);
 							Thread t2 = new Thread(myService);
 							t2.start();
 						}
@@ -161,9 +164,16 @@ public class Frogger_GamePrepServer {
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
+					} finally {
+						//port may be occupied if it is not closed
+						if ( server != null ) {
+							try {
+								server.close();
+							} catch( IOException e) {
+								System.err.println("Error when closing");
+							}
+						}
 					}
-					
-		
 				}
 			}
 		});

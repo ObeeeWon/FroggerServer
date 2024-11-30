@@ -109,8 +109,16 @@ public class ServerService implements Runnable {
 				x+= GameProperties.CHARACTER_STEP;
 				frog.setX(x);
 			}	
+			out.println("FROGPOSITION" + frog.getX() + " " + frog.getY());
 			out.flush();
 
+			return;
+			
+		} else if (command.equals("GETSCORE")) {
+			
+			out.println("SCORE" + tempScore);
+			out.flush();
+			
 			return;
 			
 		} else if ( command.equals("GETFROG")) {
@@ -119,7 +127,8 @@ public class ServerService implements Runnable {
 			//FROGPOSITION + frog.getX() + + frog.getY() + \n
 			//loop through and start car arrays/ log arrays moving
 			System.out.println("FROGPOSITION");
-			out.println(frog.getX() + + frog.getY() + "\n");
+			out.println("FROGPOSITION" + frog.getX() + " " + frog.getY() + "\n");
+
 			out.flush();
 
 			return;
