@@ -1,10 +1,17 @@
 /* SERVER INSTANCE */
+import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.util.Scanner;
 
 public class ServerService implements Runnable {
-	
+	final static int CLIENT_PORT = 5656;
+
 	//declare but not initialize the passed variables from
 	//BankServer (we need to use the originals)
 	private Socket s;
@@ -29,10 +36,10 @@ public class ServerService implements Runnable {
 	
 	public ServerService() {}
 	
-	public ServerService(Socket s, Character1 c1, 
-			String user_input, int tempScore,
-			Character2[] c2, Character2[] c3, Character2[] c4,
-			Character3[] c5, Character3[] c6, Character3[] c7
+	public ServerService(Socket s, Character1 c1,
+			String user_input, int tempScore
+//			Character2[] c2, Character2[] c3, Character2[] c4,
+//			Character3[] c5, Character3[] c6, Character3[] c7
 				) {
 		this.s = s;
 		this.frog = c1;
@@ -40,14 +47,14 @@ public class ServerService implements Runnable {
 		this.user_input = user_input;
 		this.tempScore = tempScore;
 		
-		this.carArrays = c2;
-		this.carArrays2 = c3;
-		this.carArrays3 = c4;
-
-//		Character3 loggie;
-		this.logArrays = c5;
-		this.logArrays2 = c6;
-		this.logArrays3 = c7;
+//		this.carArrays = c2;
+//		this.carArrays2 = c3;
+//		this.carArrays3 = c4;
+//
+////		Character3 loggie;
+//		this.logArrays = c5;
+//		this.logArrays2 = c6;
+//		this.logArrays3 = c7;
 	}
 	
 	@Override
@@ -68,49 +75,105 @@ public class ServerService implements Runnable {
 	}
 }
 	
-	private void processRequest() {
-		//need a loop to process the command tokens as they are
-		//parsed one at a time
-		while (true) {
-			if ( !in.hasNext() ) return;
-			
-			//extract the first token (command)
-			String command = in.next();//in.next() gets String
-			
-			excuteCommand(command);
+	public void processRequest () throws IOException {
+		//if next request is empty then return
+		while(true) {
+			if(!in.hasNext( )){
+				return;
+			}
+			String command = in.next();
+			if (command.equals("Quit")) {
+				return;
+			} else {
+				executeCommand(command);
+			}
 		}
 	}
 	
-	private void excuteCommand(String command) {
+	static void updateDB(String user_input, int tempScore) {
+		
+		//update data
+		Connection conn = null;
+		
+		try {
+		//load the database driver
+		Class.forName("org.sqlite.JDBC");
+		System.out.print("Frogger DB Loaded");
+		
+		//create connection string and connect to database
+		String dbURL = "jdbc:sqlite:froggerdb.db";
+		conn = DriverManager.getConnection(dbURL);
+		
+		if (conn != null) {
+			System.out.println("connected to database");
+			
+			//show meta data for database
+			DatabaseMetaData db = (DatabaseMetaData) conn.getMetaData();
+			System.out.println("Driver Name: " + db.getDriverName());
+			System.out.println("Driver Version: " + db.getDriverVersion());
+			System.out.println("Product Name: " + db.getDatabaseProductName());
+			System.out.println("Product Version: " + db.getDatabaseProductVersion());
+		
+		   String sqlUpdate = "UPDATE SCORE_RECORDS SET SCORE = ? WHERE NAME = ?";
+		   try (PreparedStatement pstmtUpdate = conn.prepareStatement(sqlUpdate)) {
+		
+		   	pstmtUpdate.setInt(1, tempScore);
+		   	pstmtUpdate.setString(2, user_input);
+		   	pstmtUpdate.executeUpdate();
+		   }
+		}
+		conn.close();			
+				
+		} catch (Exception e) {
+		e.printStackTrace();
+		
+		}
+
+}
+
+	
+	private void executeCommand(String command) throws IOException{
 		if ( command.equals("MOVEFROG")) {
 			//MOVEFROG UP\n
 			//MOVEFROG LEFT\n
 			//extract the string passed through socket
 			
-			// UP
 			String direction = in.next();
+			int x = frog.getX();
+			int y = frog.getY();
+
+			// UP
 			if (direction.equals("UP")) {
-				int y = frog.getY();
 				y-= GameProperties.CHARACTER_STEP;
-				frog.setY(y);
 			}	// DOWN
 			else if (direction.equals("DOWN")) {
-				int y = frog.getY();
 				y+= GameProperties.CHARACTER_STEP;
-				frog.setY(y);
 			}	// LEFT
 			else if (direction.equals("LEFT")) {
-				int x = frog.getX();
 				x-= GameProperties.CHARACTER_STEP;
-				frog.setX(x);
 			}	// RIGHT
 			else if (direction.equals("RIGHT")) {
-				int x = frog.getX();
 				x+= GameProperties.CHARACTER_STEP;
-				frog.setX(x);
 			}	
+			
+			frog.setX(x);
+			frog.setY(y);
 			out.println("FROGPOSITION" + frog.getX() + " " + frog.getY());
+			
+				
+			//send a response
+			Socket s2 = new Socket("localhost", CLIENT_PORT);
+			
+			//Initialize data stream to send data out
+			OutputStream outstream = s2.getOutputStream();
+			PrintWriter out = new PrintWriter(outstream);
+
+			String commandOut = "FROGPOSITION: " + x + " " + y + "\n";
+			System.out.println("Sending: " + commandOut);
+			out.println(commandOut);
 			out.flush();
+				
+			s2.close();
 
 			return;
 			
@@ -119,6 +182,8 @@ public class ServerService implements Runnable {
 			out.println("SCORE" + tempScore);
 			out.flush();
 			
+			updateDB(user_input, tempScore);
+
 			return;
 			
 		} else if ( command.equals("GETFROG")) {

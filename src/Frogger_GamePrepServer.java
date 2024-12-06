@@ -154,9 +154,9 @@ public class Frogger_GamePrepServer {
 							System.out.println("client connected");
 							
 							ServerService myService = new ServerService (
-									s, frog, user_input, tempScore, 
-									carArrays, carArrays2, carArrays3, 
-									logArrays, logArrays2, logArrays3);
+									s, frog, user_input, tempScore); 
+//									carArrays, carArrays2, carArrays3, 
+//									logArrays, logArrays2, logArrays3
 							Thread t2 = new Thread(myService);
 							t2.start();
 						}
