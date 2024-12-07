@@ -137,26 +137,26 @@ public class Frogger_GamePrepServer {
 			}
 		}
 			
-		//server commands
-		final int SOCKET_PORT = 5556;
 		
+		final int SERVER_PORT = 5556;
+
+		//game variables go here, pass to service
+
+		//run server in own thread
 		Thread t1 = new Thread ( new Runnable () {
 			public void run ( ) {
 				synchronized(this) {
 
-					ServerSocket server = null;
+					ServerSocket server;
 					try {
 						
-						server = new ServerSocket(SOCKET_PORT);
+						server = new ServerSocket(SERVER_PORT);
 						System.out.println("Waiting for clients to connect...");
 						while(true) {
 							Socket s = server.accept();
 							System.out.println("client connected");
 							
-							ServerService myService = new ServerService (
-									s, frog, user_input, tempScore); 
-//									carArrays, carArrays2, carArrays3, 
-//									logArrays, logArrays2, logArrays3
+							ServerService myService = new ServerService (s, frog);
 							Thread t2 = new Thread(myService);
 							t2.start();
 						}
@@ -164,20 +164,14 @@ public class Frogger_GamePrepServer {
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
-					} finally {
-						//port may be occupied if it is not closed
-						if ( server != null ) {
-							try {
-								server.close();
-							} catch( IOException e) {
-								System.err.println("Error when closing");
-							}
-						}
 					}
+					
+		
 				}
 			}
 		});
 		t1.start( );
+
 		
 		KeepMoving(carArrays, carArrays2, carArrays3,
 				logArrays, logArrays2, logArrays3);
@@ -192,6 +186,8 @@ public class Frogger_GamePrepServer {
 				updPoint);
 
 	}
+	
+	
 	
 	static String ConnectandSavetoDB(String user_input, int tempScore) {
 		//declare a connection and sql statement to execute

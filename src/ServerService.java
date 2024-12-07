@@ -36,6 +36,11 @@ public class ServerService implements Runnable {
 	
 	public ServerService() {}
 	
+	public ServerService(Socket s, Character1 c1) {
+		this.s = s;
+		this.frog = c1;
+	}
+	
 	public ServerService(Socket s, Character1 c1,
 			String user_input, int tempScore
 //			Character2[] c2, Character2[] c3, Character2[] c4,
@@ -55,15 +60,17 @@ public class ServerService implements Runnable {
 //		this.logArrays = c5;
 //		this.logArrays2 = c6;
 //		this.logArrays3 = c7;
+		
 	}
 	
 	@Override
 	public void run() {
 		
-		try {
+		try {//use the current connection
 			in = new Scanner( s.getInputStream() );
-			out = new PrintWriter ( s.getOutputStream() );
+			out = new PrintWriter ( s.getOutputStream(),true );
 			processRequest();
+			
 	}	catch (Exception e) {
 		e.printStackTrace();
 	} finally {
@@ -138,9 +145,11 @@ public class ServerService implements Runnable {
 			//MOVEFROG LEFT\n
 			//extract the string passed through socket
 			
+			int playerNo = in.nextInt();
 			String direction = in.next();
 			int x = frog.getX();
 			int y = frog.getY();
+			
 
 			// UP
 			if (direction.equals("UP")) {
@@ -155,20 +164,24 @@ public class ServerService implements Runnable {
 			else if (direction.equals("RIGHT")) {
 				x+= GameProperties.CHARACTER_STEP;
 			}	
+			else {
+				System.out.println("unexpected command");
+			}
 			
 			frog.setX(x);
 			frog.setY(y);
-			out.println("FROGPOSITION" + frog.getX() + " " + frog.getY());
 			
-				
 			//send a response
 			Socket s2 = new Socket("localhost", CLIENT_PORT);
 			
 			//Initialize data stream to send data out
 			OutputStream outstream = s2.getOutputStream();
 			PrintWriter out = new PrintWriter(outstream);
+			
+			String commandOut = "MOVEFROG " + playerNo + " " + direction + " " + frog.getX() + " " + frog.getY();
+//			System.out.println("Player "+playerNo+" "+playerAction + " "+playerX+", "+playerY);
 
-			String commandOut = "FROGPOSITION: " + x + " " + y + "\n";
+//			String commandOut = "MOVEFROG " + x + " " + y + "\n";
 			System.out.println("Sending: " + commandOut);
 			out.println(commandOut);
 			out.flush();
